@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { io } from 'socket.io-client';
 import { canPlayCard } from './utils/cards';
-
+import './App.css';
 const socket = io("http://localhost:3000");
 
 function App() {
@@ -37,7 +37,7 @@ function App() {
       //     prev.filter(c => !(c.value === card.value && c.suit === card.suit))
       //   );
       // }
-});
+    });
 
 
     socket.on("update-played-cards", (playedCards) => {
@@ -104,10 +104,6 @@ function App() {
 
 
   const validMoves = getValidMoves(myCards, playedCards);
-  console.log("Valid Moves:", validMoves);
-  console.log('Mycards', myCards);
-  console.log('Mycards', myCards);
-  console.log('playedcards', playedCards);
   const canPass = validMoves.length === 0;
 
   // const handlePass = () => {
@@ -122,26 +118,6 @@ function App() {
     return { above, below };
   };
 
-  // const renderSuit = (suit, values) => {
-  //   const { above, below } = splitCards(values);
-  //   return (
-  //     <div key={suit} style={{ margin: '20px', textAlign: 'center' }}>
-  //       <div>
-  //         {above.map(v => (
-  //           <div key={v}>{v} of {suit}</div>
-  //         ))}
-  //       </div>
-  //       <div style={{ fontWeight: 'bold', margin: '5px 0' }}>
-  //         7 of {suit}
-  //       </div>
-  //       <div>
-  //         {below.map(v => (
-  //           <div key={v}>{v} of {suit}</div>
-  //         ))}
-  //       </div>
-  //     </div>
-  //   );
-  // };
   function handlePass() {
     socket.emit("pass-turn", { roomId }, (response) => {
       if (!response.success) {
@@ -151,36 +127,14 @@ function App() {
   }
 
   const suitIcons = {
-  hearts: "❤️",
-  diamonds: "♦️",
-  spades: "♠️",
-  clubs: "♣️",
-};
-
-const renderSuit = (suit, values) => {
-  const { above, below } = splitCards(values);
-
-  return (
-    <div key={suit} style={{ margin: '20px', textAlign: 'center', minWidth: '50px' }}>
-      {/* Above 7 */}
-      {[...above].reverse().map(v => (
-        <div key={v}>{v} {suitIcons[suit]}</div>
-      ))}
-
-      {/* 7 with suit icon */}
-      <div style={{ fontWeight: 'bold', margin: '5px 0' }}>
-        7 {suitIcons[suit]}
-      </div>
-
-      {/* Below 7 */}
-      {below.map(v => (
-        <div key={v}>{v} {suitIcons[suit]}</div>
-      ))}
-    </div>
+    hearts: "❤️",
+    diamonds: "♦️",
+    spades: "♠️",
+    clubs: "♣️",
+  };
+  const hasUnplayedSeven = validMoves.some(
+    card => card.value === 7 && !playedCards[card.suit]?.includes(7)
   );
-};
-
-
 
   return (
     <div style={{ padding: "2rem" }}>
@@ -198,24 +152,28 @@ const renderSuit = (suit, values) => {
         </>
       ) : (
         <>
-          <h2>Joined Room: {roomId}</h2>
-          <h3>Players: {players.length}/4</h3>
-          <ul>
-            {players.map(p => (
-              <li key={p.id}>{p.id === socket.id ? "You" : p.id}</li>
+          <h2 className="room-title">Room ID: {roomId}</h2>
+          <h3 className="player-count">Players Joined: {players.length}/4</h3>
+
+          <div className="player-list">
+            {players.map((p, index) => (
+              <div key={p.id} className={`player-card ${p.id === socket.id ? 'you' : ''}`}>
+                <span className="player-name">
+                  {p.id === socket.id ? "You" : `Player ${index + 1}`}
+                </span>
+              </div>
             ))}
-          </ul>
+          </div>
 
           <div style={{ display: "flex", gap: "8px", flexWrap: "wrap" }}>
             {myCards.map((card, index) => {
               const validMoves = getValidMoves(myCards, playedCards);
+
               const isCardPlayable = myTurn && validMoves.some(
                 c => c.suit === card.suit && c.value === card.value
               );
 
               const isPlayed = playedCards[card.suit]?.includes(parseInt(card.value));
-              console.log('card',card);
-              console.log('isPlayed',isPlayed);
               return (
                 <div
                   key={index}
@@ -225,29 +183,21 @@ const renderSuit = (suit, values) => {
                       if (!res.success) alert(res.message);
                     });
                   }}
-                  style={{
-                    border: "1px solid black",
-                    padding: "10px",
-                    margin: "5px",
-                    width: "60px",
-                    textAlign: "center",
-                    cursor: myTurn ? isPlayed ? "not-allowed" : "pointer" : "not-allowed",
-                    backgroundColor: myTurn ? isPlayed ? "gray" : "lightgreen" : "gray"
-                    // isPlayed
-                    //   ? "gray"
-                    //   : isCardPlayable
-                    //   ? "lightgreen"
-                    //   : "#eee"
-                  }}
+                  className={`card ${myTurn
+                      ? isPlayed ? 'grey' : 'green' : 'grey'
+                    // : playedCards[card.suit]?.includes(card.value)
+                    // ? 'grey'
+                    // : ''
+                    }`}
                 >
-                  {card.value} <br />  {suitIcons[card.suit]}
+                  {card.value} <br /> {suitIcons[card.suit]}
                 </div>
               );
             })}
 
           </div>
 
-          {myTurn && validMoves.length === 0 && (
+          {myTurn && (validMoves.length === 0 || !hasUnplayedSeven) && (
             <button
               onClick={handlePass}
               style={{ marginTop: "20px", padding: "10px", backgroundColor: "#ccc" }}
@@ -258,13 +208,59 @@ const renderSuit = (suit, values) => {
           {myTurn ? (
             <div style={{ color: "green", fontWeight: "bold" }}>Your Turn</div>
           ) : (
-            <div style={{ color: "gray" }}>Waiting for other players...</div>
+            <div id="wrap">
+              Waiting to turn
+            </div>
           )}
-          <div style={{ display: 'flex', gap: '40px', justifyContent: 'center', marginTop: '40px' }}>
-            {Object.entries(playedCards).map(([suit, values]) => (
-              values.includes(7) && renderSuit(suit, values)
-            ))}
+
+          <div className="played-board">
+            {Object.entries(playedCards).map(([suit, values]) =>
+              values.includes(7) ? (
+                <div className="suit-stack" key={suit}>
+                  {[...splitCards(values).above].reverse().map((val, i) => (
+                    <div
+                      key={val}
+                      className={`played-card ${['hearts', 'diamonds'].includes(suit) ? 'red' : 'black'}`}
+                      style={{ top: `${i * 20}px` }}
+                    >
+                      <div className="card-top-left">
+                        {val} {suitIcons[suit]}
+                      </div>
+                      <div className="card-center">{val}</div>
+                    </div>
+                  ))}
+
+                  {/* 7 goes in the middle */}
+                  <div
+                    className={`played-card ${['hearts', 'diamonds'].includes(suit) ? 'red' : 'black'}`}
+                    style={{ top: `${splitCards(values).above.length * 20}px` }}
+                  >
+                    <div className="card-top-left">
+                      7 {suitIcons[suit]}
+                    </div>
+                    <div className="card-center">7</div>
+                  </div>
+
+                  {/* Below 7 */}
+                  {splitCards(values).below.map((val, i) => (
+                    <div
+                      key={val}
+                      className={`played-card ${['hearts', 'diamonds'].includes(suit) ? 'red' : 'black'}`}
+                      style={{ top: `${(splitCards(values).above.length + 1 + i) * 20}px` }}
+                    >
+                      <div className="card-top-left">
+                        {val} {suitIcons[suit]}
+                      </div>
+                      <div className="card-center">{val}</div>
+                    </div>
+                  ))}
+                </div>
+              ) : null
+            )}
           </div>
+
+
+
         </>
       )}
     </div>
