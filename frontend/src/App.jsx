@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { io } from 'socket.io-client';
 import { canPlayCard } from './utils/cards';
 import './App.css';
+import WelcomePage from "./components/welcome";
 const socket = io("https://badamsatti-rnmm.onrender.com/");
 // const socket = io("http://localhost:3000/");
 
@@ -45,13 +46,6 @@ useEffect(() => {
     socket.on("card-played", ({ card, playerId, playedCards }) => {
       console.log(`${playerId} played ${card.value} of ${card.suit}`);
       setPlayedCards(playedCards);
-
-      // // 👇 If you played this card, remove it from your hand
-      // if (playerId === socket.id) {
-      //   setMyCards(prev =>
-      //     prev.filter(c => !(c.value === card.value && c.suit === card.suit))
-      //   );
-      // }
     });
 
 
@@ -71,8 +65,6 @@ useEffect(() => {
       const nextPlayer = room.players[room.turnIndex];
       io.to(roomId).emit("turn-update", nextPlayer.id);
     });
-
-
     return () => {
       socket.off("players-update");
       socket.off("game-started");
@@ -154,28 +146,38 @@ const hasValidMove = myCards.some(card => isCardPlayable(card, playedCards));
   const hasUnplayedSeven = validMoves.some(
     card => card.value === 7 && !playedCards[card.suit]?.includes(7)
   );
-if (!submitted) {
+// if (!submitted) {
+//   return (
+//     <div className="name-entry">
+//       <h2>Enter your name to join:</h2>
+//       <input
+//         type="text"
+//         value={name}
+//         onChange={(e) => setName(e.target.value)}
+//         placeholder="Your name"
+//       />
+//       <button onClick={() => {
+//         if (name.trim()) {
+//           socket.emit('setName', name.trim());
+//           setSubmitted(true);
+//         }
+//       }}>
+//         Join Game
+//       </button>
+//     </div>
+//   );
+// }
+
+  const handleJoin = (name) => {
+    socket.emit('setName', name.trim());
+    setName(name);
+    setSubmitted(true);
+  };
   return (
-    <div className="name-entry">
-      <h2>Enter your name to join:</h2>
-      <input
-        type="text"
-        value={name}
-        onChange={(e) => setName(e.target.value)}
-        placeholder="Your name"
-      />
-      <button onClick={() => {
-        if (name.trim()) {
-          socket.emit('setName', name.trim());
-          setSubmitted(true);
-        }
-      }}>
-        Join Game
-      </button>
-    </div>
-  );
-}
-  return (
+<div>
+    {!name ? (
+        <WelcomePage onJoin={handleJoin} />
+      ) : (      
     <div style={{ padding: "2rem" }}>
       <h2>Start Game</h2>
       
@@ -326,6 +328,8 @@ if (!submitted) {
         </>
       )}
     </div>
+)}
+</div>
   );
 }
 

@@ -1,0 +1,81 @@
+.welcome-page {
+  
+  color: #fff;
+  min-height: 100vh;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  font-family: 'Segoe UI', sans-serif;
+}
+
+.welcome-box {
+  background-color: #1b3d2f;
+  padding: 40px;
+  border-radius: 16px;
+  text-align: center;
+  box-shadow: 0 0 20px #FED16A;
+  max-width: 460px;
+  width: 100%;
+}
+
+.game-title {
+  font-size: 2rem;
+  margin-bottom: 16px;
+}
+
+.game-description {
+  font-size: 1rem;
+  margin-bottom: 24px;
+}
+
+.name-input {
+  width: 95%;
+  padding: 10px 12px;
+  font-size: 1rem;
+  border-radius: 8px;
+  border: none;
+  outline: none;
+  margin-bottom: 16px;
+}
+
+.join-button {
+  width: 100%;
+  padding: 12px;
+  font-size: 1rem;
+  background-color: #F97A00;
+  border: none;
+  border-radius: 8px;
+  color: #fff;
+  cursor: pointer;
+  transition: background 0.3s ease;
+}
+
+.join-button:hover {
+  background-color: #1d180e;
+}
+
+.card-emoji {
+  font-size: 48px;
+  display: inline-block;
+  animation: bounceSpin 2s infinite ease-in-out;
+}
+
+@keyframes bounceSpin {
+  0% {
+    transform: translateY(0) rotate(0deg);
+  }
+  25% {
+    transform: translateY(-20px) rotate(90deg);
+  }
+  50% {
+    transform: translateY(0) rotate(180deg);
+  }
+  75% {
+    transform: translateY(-20px) rotate(270deg);
+  }
+  100% {
+    transform: translateY(0) rotate(360deg);
+  }
+}
+
+
