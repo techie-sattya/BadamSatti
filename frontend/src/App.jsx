@@ -3,6 +3,7 @@ import { io } from 'socket.io-client';
 import { canPlayCard } from './utils/cards';
 import './App.css';
 const socket = io("https://badamsatti-rnmm.onrender.com/");
+// const socket = io("http://localhost:3000/");
 
 function App() {
   const [roomId, setRoomId] = useState("");
@@ -17,6 +18,7 @@ function App() {
 const [name, setName] = useState('');
 const [submitted, setSubmitted] = useState(false);
 const [rankings, setRankings] = useState([]);
+const [turnPlayerId, setTurnPlayerId] = useState(null);
 
 useEffect(() => {
   socket.on("player-finished", ({ id, name, rank }) => {
@@ -37,6 +39,7 @@ useEffect(() => {
 
     socket.on("turn-update", (currentPlayerId) => {
       console.log("Turn update received for:", currentPlayerId, "My ID:", socket.id);
+      setTurnPlayerId(currentPlayerId);
       setMyTurn(currentPlayerId === socket.id);
     });
     socket.on("card-played", ({ card, playerId, playedCards }) => {
@@ -192,14 +195,19 @@ if (!submitted) {
           <h2 className="room-title">Room ID: {roomId}</h2>
           <h3 className="player-count">Players Joined: {players.length}/4</h3>
           <div className="player-list">
-            {players.map((p, index) => (
-              <div key={p.id} className={`player-card ${p.id === socket.id ? 'you' : ''}`}>
-                <span className="player-name">
-                  {p.id === socket.id ? "You" : p.name || `Player ${index + 1}`}
-                </span>
-              </div>
-            ))}
-          </div>
+          {players.map((p, index) => (
+            <div
+              key={p.id}
+              className={`player-card 
+                ${p.id === socket.id ? 'you' : ''} 
+                ${p.id === turnPlayerId ? 'active-turn' : ''}`}
+            >
+              <span className="player-name">
+                {p.id === socket.id ? "You" : p.name || `Player ${index + 1}`}
+              </span>
+            </div>
+          ))}
+        </div>
 
           <div style={{ display: "flex", gap: "8px", flexWrap: "wrap" }}>
             {myCards.map((card, index) => {
