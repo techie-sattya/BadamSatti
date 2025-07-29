@@ -13,8 +13,20 @@ function App() {
   const [myTurn, setMyTurn] = useState(false);
   const [playedCards, setPlayedCards] = useState({});
   const [room, setRoom] = useState(null);
+  // Inside App.jsx (or your main component)
+const [name, setName] = useState('');
+const [submitted, setSubmitted] = useState(false);
+const [rankings, setRankings] = useState([]);
 
+useEffect(() => {
+  socket.on("player-finished", ({ id, name, rank }) => {
+    setRankings(prev => [...prev, { id, name, rank }]);
+  });
 
+  return () => {
+    socket.off("player-finished");
+  };
+}, []);
   useEffect(() => {
     socket.on("players-update", (updatedPlayers) => setPlayers(updatedPlayers));
 
@@ -106,11 +118,15 @@ function App() {
   const validMoves = getValidMoves(myCards, playedCards);
   const canPass = validMoves.length === 0;
 
-  // const handlePass = () => {
-  //   socket.emit("pass-turn", { roomId }, (response) => {
-  //     if (!response.success) alert(response.message);
-  //   });
-  // };
+const isCardPlayable = (card, playedCards) => {
+  const values = playedCards[card.suit] || [];
+  const numValue = parseInt(card.value);
+
+  if (!values.includes(7)) return numValue === 7;
+  return values.includes(numValue - 1) || values.includes(numValue + 1);
+};
+
+const hasValidMove = myCards.some(card => isCardPlayable(card, playedCards));
 
   const splitCards = (values) => {
     const above = values.filter(v => v < 7).sort((a, b) => b - a);
@@ -135,10 +151,31 @@ function App() {
   const hasUnplayedSeven = validMoves.some(
     card => card.value === 7 && !playedCards[card.suit]?.includes(7)
   );
-
+if (!submitted) {
+  return (
+    <div className="name-entry">
+      <h2>Enter your name to join:</h2>
+      <input
+        type="text"
+        value={name}
+        onChange={(e) => setName(e.target.value)}
+        placeholder="Your name"
+      />
+      <button onClick={() => {
+        if (name.trim()) {
+          socket.emit('setName', name.trim());
+          setSubmitted(true);
+        }
+      }}>
+        Join Game
+      </button>
+    </div>
+  );
+}
   return (
     <div style={{ padding: "2rem" }}>
       <h2>Start Game</h2>
+      
       {!joined ? (
         <>
           <button onClick={createRoom}>Create Room</button>
@@ -154,12 +191,11 @@ function App() {
         <>
           <h2 className="room-title">Room ID: {roomId}</h2>
           <h3 className="player-count">Players Joined: {players.length}/4</h3>
-
           <div className="player-list">
             {players.map((p, index) => (
               <div key={p.id} className={`player-card ${p.id === socket.id ? 'you' : ''}`}>
                 <span className="player-name">
-                  {p.id === socket.id ? "You" : `Player ${index + 1}`}
+                  {p.id === socket.id ? "You" : p.name || `Player ${index + 1}`}
                 </span>
               </div>
             ))}
@@ -168,11 +204,6 @@ function App() {
           <div style={{ display: "flex", gap: "8px", flexWrap: "wrap" }}>
             {myCards.map((card, index) => {
               const validMoves = getValidMoves(myCards, playedCards);
-
-              const isCardPlayable = myTurn && validMoves.some(
-                c => c.suit === card.suit && c.value === card.value
-              );
-
               const isPlayed = playedCards[card.suit]?.includes(parseInt(card.value));
               return (
                 <div
@@ -180,7 +211,12 @@ function App() {
                   onClick={() => {
                     if (!myTurn) return alert("Not your turn!");
                     socket.emit("play-card", { roomId, card }, (res) => {
-                      if (!res.success) alert(res.message);
+                      // if (!res.success) alert(res.message);
+                      if (res.success) {
+                        setMyCards(prev => prev.filter(c => !(c.suit === card.suit && c.value === card.value)));
+                      } else {
+                        alert(res.message || "Invalid move.");
+                      }
                     });
                   }}
                   className={`card ${myTurn
@@ -197,10 +233,13 @@ function App() {
 
           </div>
 
-          {myTurn && (validMoves.length === 0 || !hasUnplayedSeven) && (
+          {!hasValidMove &&
+          myTurn &&
+          //&& (validMoves.length === 0 || !hasUnplayedSeven) && 
+          (
             <button
+              class="button-29" role="button"
               onClick={handlePass}
-              style={{ marginTop: "20px", padding: "10px", backgroundColor: "#ccc" }}
             >
               Pass
             </button>
@@ -259,8 +298,23 @@ function App() {
             )}
           </div>
 
+{/* <ul>
+  {players.map(p => {
+    const rank = rankings.find(r => r.id === p.id);
+    return (
+      <li key={p.id}>
+        {p.name || p.id} {rank ? ` - 🏆 ${rank.rank}${rank.rank === 1 ? 'st' : rank.rank === 2 ? 'nd' : rank.rank === 3 ? 'rd' : 'th'} Place` : ""}
+      </li>
+    );
+  })}
+</ul> */}
 
-
+{rankings.length > 0 && rankings[0].id === socket.id && (
+  <h2 style={{ color: "green" }}>🎉 You are the Winner! 🥇</h2>
+)}
+{rankings.length > 0 && rankings.some(r => r.id === socket.id) && (
+  <h3>You finished at {rankings.find(r => r.id === socket.id).rank} place</h3>
+)}
         </>
       )}
     </div>

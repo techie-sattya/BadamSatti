@@ -14,7 +14,7 @@ const PORT = 3000;
 app.use(cors());
 
 const rooms = {}; // { roomId: { players: [], gameStarted: false, cards: {} } }
-
+const users = {};
 function shuffleDeck() {
   const suits = ['hearts', 'diamonds', 'clubs', 'spades'];
   const values = ['A', '2', '3', '4', '5', '6', '7', '8', '9', '10', 'J', 'Q', 'K'];
@@ -29,80 +29,92 @@ function shuffleDeck() {
 
 io.on("connection", (socket) => {
   console.log("User connected:", socket.id);
-
+  
   socket.on("create-room", (callback) => {
-    const roomId = Math.random().toString(36).substring(2, 8);
-    rooms[roomId] = {
-      players: [],
-      gameStarted: false,
-      cards: {},
-      turnIndex: 0,
-      playedCards: { hearts: [7], diamonds: [], clubs: [], spades: [] }
-    };
-    socket.join(roomId);
-    rooms[roomId].players.push({ id: socket.id });
-    callback(roomId);
-    io.to(roomId).emit("players-update", rooms[roomId].players);
-  });
+  console.log('users',users);
+  const roomId = Math.random().toString(36).substring(2, 8);
+  const playerName = users[socket.id]?.name || "Player1";
 
-  socket.on("join-room", (roomId, callback) => {
-    const room = rooms[roomId];
-    if (room && room.players.length < 4) {
-      socket.join(roomId);
-      room.players.push({ id: socket.id });
-      callback({ success: true });
-      io.to(roomId).emit("players-update", room.players);
+  rooms[roomId] = {
+    players: [],
+    gameStarted: false,
+    cards: {},
+    turnIndex: 0,
+    playedCards: { hearts: [7], diamonds: [], clubs: [], spades: [] },
+    finishedPlayers: [] // New
+  };
 
-      // Start game when 4 players have joined
-      if (room.players.length === 4 && !room.gameStarted) {
-        room.gameStarted = true;
+  socket.join(roomId);
 
-        const deck = shuffleDeck();
+  rooms[roomId].players.push({ id: socket.id, name: playerName });
 
-// Distribute 13 cards each
-for (let i = 0; i < 4; i++) {
-  room.cards[room.players[i].id] = deck.slice(i * 13, (i + 1) * 13);
-}
-
-// Find the player who has 7 of hearts
-const sevenOfHearts = { suit: "hearts", value: "7" };
-let firstTurnIndex = 0;
-
-for (let i = 0; i < room.players.length; i++) {
-  const pid = room.players[i].id;
-  const has7Hearts = room.cards[pid].some(card =>
-    card.suit === sevenOfHearts.suit && card.value === sevenOfHearts.value
-  );
-  if (has7Hearts) {
-    firstTurnIndex = i;
-    break;
-  }
-}
-
-// Set turn to the player with 7♥
-room.turnIndex = firstTurnIndex;
-
-// Set 7♥ as already played
-room.playedCards = { hearts: [], diamonds: [], clubs: [], spades: [] };
-
-// Broadcast game start
-io.to(roomId).emit("game-started", {
-  players: room.players,
-  cards: room.cards
+  callback(roomId);
+  io.to(roomId).emit("players-update", rooms[roomId].players);
 });
 
-// Tell everyone whose turn it is
-io.to(roomId).emit("turn-update", room.players[firstTurnIndex].id);
+ socket.on("join-room", (roomId, callback) => {
+  console.log('rooms', rooms);
+  const room = rooms[roomId];
+  console.log('room', room);
+  if (room && room.players.length < 4) {
+    socket.join(roomId);
 
+    const playerName = users[socket.id]?.name || `Player${room.players.length + 1}`;
+    room.players.push({ id: socket.id, name: playerName });
+
+    callback({ success: true });
+    io.to(roomId).emit("players-update", room.players);
+
+    // Start game when 4 players have joined
+    if (room.players.length === 4 && !room.gameStarted) {
+      room.gameStarted = true;
+
+      const deck = shuffleDeck();
+
+      // Distribute 13 cards each
+      for (let i = 0; i < 4; i++) {
+        room.cards[room.players[i].id] = deck.slice(i * 13, (i + 1) * 13);
       }
 
-    } else {
-      callback({ success: false, message: "Room full or does not exist" });
+      // Find the player who has 7 of hearts
+      const sevenOfHearts = { suit: "hearts", value: "7" };
+      let firstTurnIndex = 0;
+
+      for (let i = 0; i < room.players.length; i++) {
+        const pid = room.players[i].id;
+        const has7Hearts = room.cards[pid].some(card =>
+          card.suit === sevenOfHearts.suit && card.value === sevenOfHearts.value
+        );
+        if (has7Hearts) {
+          firstTurnIndex = i;
+          break;
+        }
+      }
+
+      // Set turn to the player with 7♥
+      room.turnIndex = firstTurnIndex;
+
+      // Set 7♥ as already played
+      room.playedCards = { hearts: [], diamonds: [], clubs: [], spades: [] };
+
+      // Broadcast game start
+      io.to(roomId).emit("game-started", {
+        players: room.players,
+        cards: room.cards
+      });
+
+      // Tell everyone whose turn it is
+      io.to(roomId).emit("turn-update", room.players[firstTurnIndex].id);
     }
-  });
+
+  } else {
+    callback({ success: false, message: "Room full or does not exist" });
+  }
+});
 
   socket.on("disconnect", () => {
     console.log("User disconnected:", socket.id);
+    delete users[socket.id];
     for (const roomId in rooms) {
       const room = rooms[roomId];
       const index = room.players.findIndex(p => p.id === socket.id);
@@ -114,7 +126,7 @@ io.to(roomId).emit("turn-update", room.players[firstTurnIndex].id);
     }
   });
 
-  socket.on("play-card", ({ roomId, card }, callback) => {
+socket.on("play-card", ({ roomId, card }, callback) => {
   const room = rooms[roomId];
 
   if (!room) {
@@ -132,20 +144,20 @@ io.to(roomId).emit("turn-update", room.players[firstTurnIndex].id);
   }
 
   const playerCards = room.cards[socket.id];
-
   const index = playerCards.findIndex(c => c.suit === card.suit && c.value === card.value);
   if (index === -1) {
     return callback({ success: false, message: "Card not found" });
   }
 
-  // Convert face cards to numbers for logic
+  // Convert face cards to numbers
   const valueMap = { A: 1, J: 11, Q: 12, K: 13 };
   const numericValue = isNaN(card.value) ? valueMap[card.value] : parseInt(card.value);
 
   const suitPlayed = room.playedCards[card.suit] || [];
+
   if (suitPlayed.length === 0 && numericValue !== 7) {
-  return callback({ success: false, message: "Must play 7 to start a suit" });
-}
+    return callback({ success: false, message: "Must play 7 to start a suit" });
+  }
 
   if (
     suitPlayed.length > 0 &&
@@ -155,50 +167,83 @@ io.to(roomId).emit("turn-update", room.players[firstTurnIndex].id);
     return callback({ success: false, message: "Card not adjacent to existing cards" });
   }
 
-  // Play card
+  // Valid card play
   suitPlayed.push(numericValue);
   suitPlayed.sort((a, b) => a - b);
   room.playedCards[card.suit] = suitPlayed;
 
+  // Remove from hand
   playerCards.splice(index, 1);
 
+  // Broadcast played card
   io.to(roomId).emit("card-played", {
     card,
     playerId: socket.id,
     playedCards: room.playedCards
   });
 
-  // Next turn
-  room.turnIndex = (room.turnIndex + 1) % 4;
-  io.to(roomId).emit("turn-update", room.players[room.turnIndex].id);
-  
-  //after valid move
-  io.to(roomId).emit("update-played-cards", room.playedCards);
-  callback({ success: true });
-});
+  // ✅ Check if player has finished
+  if (playerCards.length === 0) {
+    room.finishedPlayers = room.finishedPlayers || [];
 
-socket.on("pass-turn", ({ roomId }, callback) => {
-  const room = rooms[roomId];
-  if (!room) return callback({ success: false, message: "Room not found" });
+    if (!room.finishedPlayers.find(p => p.id === socket.id)) {
+      const playerData = room.players.find(p => p.id === socket.id);
+      const name = playerData?.name || "Player";
 
-  const currentPlayer = room.players[room.turnIndex];
+      room.finishedPlayers.push({ id: socket.id, name });
 
-  if (currentPlayer.id !== socket.id) {
-    return callback({ success: false, message: "Not your turn" });
+      io.to(roomId).emit("player-finished", {
+        id: socket.id,
+        name,
+        rank: room.finishedPlayers.length
+      });
+    }
   }
 
-  // Move to next player
-  room.turnIndex = (room.turnIndex + 1) % room.players.length;
+  // ✅ Advance turn (skip finished players)
+  const totalPlayers = room.players.length;
+  for (let i = 1; i <= totalPlayers; i++) {
+    const nextIndex = (room.turnIndex + i) % totalPlayers;
+    const nextPlayer = room.players[nextIndex];
+    const isFinished = room.finishedPlayers?.some(p => p.id === nextPlayer.id);
+    if (!isFinished) {
+      room.turnIndex = nextIndex;
+      break;
+    }
+  }
 
-  // Notify all clients whose turn it is now
-  const nextPlayer = room.players[room.turnIndex];
-  io.to(roomId).emit("turn-update", nextPlayer.id);
+  // Send next turn update
+  io.to(roomId).emit("turn-update", room.players[room.turnIndex].id);
+
+  // Update everyone with played cards
+  io.to(roomId).emit("update-played-cards", room.playedCards);
 
   callback({ success: true });
 });
 
 
+  socket.on("pass-turn", ({ roomId }, callback) => {
+    const room = rooms[roomId];
+    if (!room) return callback({ success: false, message: "Room not found" });
 
+    const currentPlayer = room.players[room.turnIndex];
+
+    if (currentPlayer.id !== socket.id) {
+      return callback({ success: false, message: "Not your turn" });
+    }
+
+    // Move to next player
+    room.turnIndex = (room.turnIndex + 1) % room.players.length;
+
+    // Notify all clients whose turn it is now
+    const nextPlayer = room.players[room.turnIndex];
+    io.to(roomId).emit("turn-update", nextPlayer.id);
+
+    callback({ success: true });
+  });
+  socket.on('setName', (name) => {
+    users[socket.id] = { name };
+  });
 });
 
 server.listen(PORT, () => {
