@@ -5,13 +5,48 @@ const cors = require("cors");
 
 const app = express();
 const server = http.createServer(app);
+// const io = new Server(server, {
+//   cors: { origin: "http://localhost:5173", methods: ["GET", "POST"] }
+// });
+
 const io = new Server(server, {
-  cors: { origin: "http://localhost:5173", methods: ["GET", "POST"] }
+  cors: {
+    origin: (origin, callback) => {
+      if (
+        !origin ||
+        origin === "http://localhost:5173" ||
+        origin.endsWith(".vercel.app")
+      ) {
+        callback(null, true);
+      } else {
+        callback(new Error("Not allowed by CORS"));
+      }
+    },
+    methods: ["GET", "POST"],
+    credentials: true
+  }
 });
+
+const cors = require("cors");
+
+app.use(cors({
+  origin: (origin, callback) => {
+    if (
+      !origin ||
+      origin === "http://localhost:5173" ||
+      origin.endsWith(".vercel.app")
+    ) {
+      callback(null, true);
+    } else {
+      callback(new Error("Not allowed by CORS"));
+    }
+  },
+  methods: ["GET", "POST"],
+  credentials: true
+}));
 
 const PORT = 3000;
 
-app.use(cors());
 
 const rooms = {}; // { roomId: { players: [], gameStarted: false, cards: {} } }
 const users = {};
