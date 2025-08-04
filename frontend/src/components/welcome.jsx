@@ -32,7 +32,7 @@ const WelcomePage = ({ onJoin }) => {
   return (
     <div className="welcome-page">
       <div className="welcome-box">
-        <div class="card-emoji">🃏</div>
+        <div className="card-emoji">🃏</div>
         
         <h1 className="game-title">Welcome to Badam Satti</h1>
         <p className="game-description">

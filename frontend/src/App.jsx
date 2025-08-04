@@ -3,6 +3,7 @@ import { io } from 'socket.io-client';
 import { canPlayCard } from './utils/cards';
 import './App.css';
 import WelcomePage from "./components/welcome";
+import { FaEdit } from 'react-icons/fa'; // icon package
 const socket = io("https://badamsatti-rnmm.onrender.com/");
 // const socket = io("http://localhost:3000/");
 
@@ -14,6 +15,8 @@ function App() {
   const [myCards, setMyCards] = useState([]);
   const [myTurn, setMyTurn] = useState(false);
   const [playedCards, setPlayedCards] = useState({});
+   const [newName, setNewName] = useState('');
+  const [isModalOpen, setIsModalOpen] = useState(false);
   const [room, setRoom] = useState(null);
   // Inside App.jsx (or your main component)
 const [name, setName] = useState('');
@@ -136,6 +139,10 @@ const hasValidMove = myCards.some(card => isCardPlayable(card, playedCards));
       }
     });
   }
+const getCardDisplayValue = (val) => {
+  const faceMap = { 1: 'A', 11: 'J', 12: 'Q', 13: 'K' };
+  return faceMap[val] || val;
+};
 
   const suitIcons = {
     hearts: "❤️",
@@ -167,11 +174,26 @@ const hasValidMove = myCards.some(card => isCardPlayable(card, playedCards));
 //     </div>
 //   );
 // }
+useEffect(() => {
+  const storedName = localStorage.getItem('username');
+  if (storedName) {
+    setName(storedName);
+    setSubmitted(true);
+    socket.emit('setName', storedName.trim());
+  }
+}, []);
 
   const handleJoin = (name) => {
+    if(newName!=''){
+      name=newName;
+    }
+    console.log('name',name)
     socket.emit('setName', name.trim());
     setName(name);
+    localStorage.setItem('username', name.trim());
     setSubmitted(true);
+    setNewName('');
+    setIsModalOpen(false)
   };
   return (
 <div>
@@ -180,7 +202,31 @@ const hasValidMove = myCards.some(card => isCardPlayable(card, playedCards));
       ) : (      
     <div style={{ padding: "2rem" }}>
       <h2>Start Game</h2>
-      
+       {name && (
+          <div className="player-info">
+            Playing as: <strong>{name}</strong>
+            <FaEdit className="edit-icon" onClick={() => setIsModalOpen(true)} />
+          </div>
+        )}
+
+        {isModalOpen && (
+        <div className="modal-overlay">
+          <div className="modal-content">
+            <h3>Change Username</h3>
+            <input
+              id='updateNameInput'
+              type="text"
+              value={newName}
+              onChange={(e) => setNewName(e.target.value)}
+              placeholder="Enter new name"
+            />
+            <div className="modal-buttons">
+              <button onClick={handleJoin}>Save</button>
+              <button onClick={() => setIsModalOpen(false)}>Cancel</button>
+            </div>
+          </div>
+        </div>
+      )}
       {!joined ? (
         <>
           <button onClick={createRoom}>Create Room</button>
@@ -194,6 +240,7 @@ const hasValidMove = myCards.some(card => isCardPlayable(card, playedCards));
         </>
       ) : (
         <>
+       
           <h2 className="room-title">Room ID: {roomId}</h2>
           <h3 className="player-count">Players Joined: {players.length}/4</h3>
           <div className="player-list">
@@ -206,6 +253,7 @@ const hasValidMove = myCards.some(card => isCardPlayable(card, playedCards));
             >
               <span className="player-name">
                 {p.id === socket.id ? "You" : p.name || `Player ${index + 1}`}
+                {rankings.find(r => r.id === socket.id)}
               </span>
             </div>
           ))}
@@ -273,7 +321,7 @@ const hasValidMove = myCards.some(card => isCardPlayable(card, playedCards));
                       style={{ top: `${i * 20}px` }}
                     >
                       <div className="card-top-left">
-                        {val} {suitIcons[suit]}
+                        {getCardDisplayValue(val)} {suitIcons[suit]}
                       </div>
                       <div className="card-center">{val}</div>
                     </div>
@@ -298,7 +346,7 @@ const hasValidMove = myCards.some(card => isCardPlayable(card, playedCards));
                       style={{ top: `${(splitCards(values).above.length + 1 + i) * 20}px` }}
                     >
                       <div className="card-top-left">
-                        {val} {suitIcons[suit]}
+                        {getCardDisplayValue(val)} {suitIcons[suit]}
                       </div>
                       <div className="card-center">{val}</div>
                     </div>
@@ -308,7 +356,7 @@ const hasValidMove = myCards.some(card => isCardPlayable(card, playedCards));
             )}
           </div>
 
-{/* <ul>
+<ul>
   {players.map(p => {
     const rank = rankings.find(r => r.id === p.id);
     return (
@@ -317,7 +365,7 @@ const hasValidMove = myCards.some(card => isCardPlayable(card, playedCards));
       </li>
     );
   })}
-</ul> */}
+</ul>
 
 {rankings.length > 0 && rankings[0].id === socket.id && (
   <h2 style={{ color: "green" }}>🎉 You are the Winner! 🥇</h2>
