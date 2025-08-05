@@ -381,3 +381,42 @@ button:hover {
   background: #00b4cc;
 }
 
+
+.floating-card {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%) scale(1);
+  background: white;
+  border: 2px solid #333;
+  border-radius: 10px;
+  padding: 20px 30px;
+  font-size: 2rem;
+  font-weight: bold;
+  z-index: 1000;
+  animation: floatOut 1.5s ease-out forwards;
+  pointer-events: none;
+}
+
+.floating-card.red {
+  color: red;
+}
+
+.floating-card.black {
+  color: black;
+}
+
+@keyframes floatOut {
+  0% {
+    opacity: 1;
+    transform: translate(-50%, -50%) scale(1);
+  }
+  60% {
+    opacity: 1;
+    transform: translate(-50%, -70%) scale(1.2);
+  }
+  100% {
+    opacity: 0;
+    transform: translate(-50%, -100%) scale(0.5);
+  }
+}

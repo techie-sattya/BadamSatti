@@ -18,6 +18,7 @@ function App() {
    const [newName, setNewName] = useState('');
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [room, setRoom] = useState(null);
+  const [lastPlayedCard, setLastPlayedCard] = useState(null);
   // Inside App.jsx (or your main component)
 const [name, setName] = useState('');
 const [submitted, setSubmitted] = useState(false);
@@ -253,12 +254,18 @@ useEffect(() => {
             >
               <span className="player-name">
                 {p.id === socket.id ? "You" : p.name || `Player ${index + 1}`}
-                {rankings.find(r => r.id === socket.id)}
+                {/* {rankings.find(r => r.id === socket.id)} */}
               </span>
             </div>
           ))}
         </div>
-
+{/* {(
+  <div className={`floating-card ${['hearts', 'diamonds'].includes(lastPlayedCard.suit) ? 'red' : 'black'}`}>
+    <span>
+      {getCardDisplayValue(lastPlayedCard.value)} {suitIcons[lastPlayedCard.suit]}
+    </span>
+  </div>
+)} */}
           <div style={{ display: "flex", gap: "8px", flexWrap: "wrap" }}>
             {myCards.map((card, index) => {
               const validMoves = getValidMoves(myCards, playedCards);
@@ -272,6 +279,7 @@ useEffect(() => {
                       // if (!res.success) alert(res.message);
                       if (res.success) {
                         setMyCards(prev => prev.filter(c => !(c.suit === card.suit && c.value === card.value)));
+                        setLastPlayedCard({ value: card.value, suit: card.suit });
                       } else {
                         alert(res.message || "Invalid move.");
                       }
@@ -323,7 +331,7 @@ useEffect(() => {
                       <div className="card-top-left">
                         {getCardDisplayValue(val)} {suitIcons[suit]}
                       </div>
-                      <div className="card-center">{val}</div>
+                      <div className="card-center">{getCardDisplayValue(val)}</div>
                     </div>
                   ))}
 
@@ -348,7 +356,7 @@ useEffect(() => {
                       <div className="card-top-left">
                         {getCardDisplayValue(val)} {suitIcons[suit]}
                       </div>
-                      <div className="card-center">{val}</div>
+                      <div className="card-center">{getCardDisplayValue(val)}</div>
                     </div>
                   ))}
                 </div>
@@ -356,7 +364,7 @@ useEffect(() => {
             )}
           </div>
 
-<ul>
+{/* <ul>
   {players.map(p => {
     const rank = rankings.find(r => r.id === p.id);
     return (
@@ -365,14 +373,14 @@ useEffect(() => {
       </li>
     );
   })}
-</ul>
+</ul> */}
 
-{rankings.length > 0 && rankings[0].id === socket.id && (
+{/* {rankings.length > 0 && rankings[0].id === socket.id && (
   <h2 style={{ color: "green" }}>🎉 You are the Winner! 🥇</h2>
 )}
 {rankings.length > 0 && rankings.some(r => r.id === socket.id) && (
   <h3>You finished at {rankings.find(r => r.id === socket.id).rank} place</h3>
-)}
+)} */}
         </>
       )}
     </div>
