@@ -10,7 +10,7 @@ const CardIntro = () => {
             {cards.map((card, index) => (
                 <img
                 key={card}
-                src={`../src/cardimages/${card}`}
+                src={`../cardimages/${card}`}
                 alt={`card-${index}`}
                 className={`card-intro card${index + 1}`}
                 />
