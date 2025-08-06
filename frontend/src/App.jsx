@@ -18,7 +18,7 @@ function App() {
   const [playedCards, setPlayedCards] = useState({});
   const [newName, setNewName] = useState('');
   const [isModalOpen, setIsModalOpen] = useState(false);
-  const [playerCount, setPlayerCount] = useState(4); // default to 4
+  const [playerCount, setPlayerCount] = useState(2); // default to 4
   const [roomInfo, setRoomInfo] = useState(null); // <-- Add this line
 
   const [room, setRoom] = useState(null);
@@ -43,7 +43,7 @@ function App() {
   useEffect(() => {
     const timer = setTimeout(() => {
       setShowIntro(false);
-    }, 3000); // 5 seconds
+    }, 2000); // 5 seconds
 
     return () => clearTimeout(timer);
   }, []);
@@ -258,39 +258,42 @@ function App() {
               )}
               {!joined ? (
                 <>
-                  <div className="room-actions">
-                    <div className="create-room-section">
-                      <button className="primary-btn" onClick={createRoom}>
-                        ➕ Create Room
-                      </button>
-                      <div className="player-count-select">
-                        <label htmlFor="playerCount">Players:</label>
-                        <select
-                          id="playerCount"
-                          value={playerCount}
-                          onChange={(e) => setPlayerCount(Number(e.target.value))}
-                        >
-                          {[2, 3, 4, 5].map((num) => (
-                            <option key={num} value={num}>
-                              {num}
-                            </option>
-                          ))}
-                        </select>
-                      </div>
-                    </div>
-                    OR
-                    <div className="join-room-section">
-                      <input
-                        className="room-input"
-                        placeholder="Enter Room ID"
-                        value={inputId}
-                        onChange={e => setInputId(e.target.value)}
-                      />
-                      <button className="secondary-btn" onClick={joinRoom}>
-                        🔗 Join Room
-                      </button>
-                    </div>
-                  </div>
+                  <div className="room-actions dark-mode">
+  <div className="create-room-section">
+    <button className="primary-btn" onClick={createRoom}>
+      ➕ Create Room
+    </button>
+    <div className="player-count-select">
+      <label htmlFor="playerCount">Players:</label>
+      <select
+        id="playerCount"
+        value={playerCount}
+        onChange={(e) => setPlayerCount(Number(e.target.value))}
+      >
+        {[2, 3, 4, 5].map((num) => (
+          <option key={num} value={num}>
+            {num}
+          </option>
+        ))}
+      </select>
+    </div>
+  </div>
+
+  <div style={{ margin: '20px 0', fontWeight: 'bold' }}>OR</div>
+
+  <div className="join-room-section">
+    <input
+      className="room-input"
+      placeholder="Enter Room ID"
+      value={inputId}
+      onChange={(e) => setInputId(e.target.value)}
+    />
+    <button className="secondary-btn" onClick={joinRoom}>
+      🔗 Join Room
+    </button>
+  </div>
+</div>
+
                 </>
               ) : (
                 <>

@@ -421,18 +421,7 @@ button:hover {
   }
 }
 
-.room-actions {
-  display: flex;
-  gap: 2rem;
-  align-items: flex-end;
-  margin-bottom: 2rem;
-  flex-wrap: wrap;
-}
-.create-room-section, .join-room-section {
-  display: flex;
-  align-items: center;
-  gap: 1rem;
-}
+
 .primary-btn, .secondary-btn {
   padding: 0.6rem 1.5rem;
   border-radius: 6px;
@@ -473,4 +462,109 @@ button:hover {
   border-radius: 4px;
   border: 1px solid #338a5c;
   font-size: 1rem;
+}
+
+
+
+.room-actions {
+  max-width: 500px;
+  margin: 30px auto;
+  padding: 30px;
+  background: #f5f5f5;
+  border-radius: 16px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+  text-align: center;
+  font-family: 'Segoe UI', sans-serif;
+  transition: background 0.3s, color 0.3s;
+}
+
+.room-actions.dark-mode {
+  background: #1f1f1f;
+  color: #f0f0f0;
+  box-shadow: 0 4px 14px rgba(255, 255, 255, 0.05);
+}
+
+.create-room-section,
+.join-room-section {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 20px;
+}
+
+.room-actions .player-count-select {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.room-actions label {
+  font-weight: 500;
+}
+
+.room-actions select,
+.room-actions input.room-input {
+  padding: 8px 14px;
+  border-radius: 8px;
+  border: 1px solid #ccc;
+  font-size: 16px;
+  background: white;
+  color: #333;
+}
+
+.room-actions.dark-mode select,
+.room-actions.dark-mode input.room-input {
+  background: #333;
+  border-color: #555;
+  color: #f0f0f0;
+}
+
+.room-actions input.room-input {
+  width: 80%;
+  max-width: 250px;
+}
+
+.primary-btn,
+.secondary-btn {
+  padding: 10px 20px;
+  border: none;
+  border-radius: 8px;
+  font-size: 16px;
+  cursor: pointer;
+  transition: background 0.3s;
+}
+
+.primary-btn {
+  background-color: #007bff;
+  color: white;
+}
+
+.primary-btn:hover {
+  background-color: #0056b3;
+}
+
+.secondary-btn {
+  background-color: #28a745;
+  color: white;
+}
+
+.secondary-btn:hover {
+  background-color: #1e7e34;
+}
+
+/* Mobile responsiveness */
+@media screen and (max-width: 500px) {
+  .room-actions {
+    padding: 20px;
+  }
+
+  .room-actions input.room-input {
+    width: 100%;
+  }
+
+  .player-count-select {
+    flex-direction: column;
+    align-items: flex-start;
+  }
 }
