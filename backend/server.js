@@ -87,7 +87,7 @@ function sendErrorEmail(errorMessage, subject = 'Badam Satti Server Exception') 
 
 io.on("connection", (socket) => {
   console.log("User connected:", socket.id);
-  sendErrorEmail(`User connected: ${socket.id}`,'New User Connected');
+  //sendErrorEmail(`User connected: ${socket.id}`,'New User Connected');
   socket.on("create-room", ({ playerLimit }, callback) => {
   try {
     const roomId = Math.random().toString(36).substring(2, 8);

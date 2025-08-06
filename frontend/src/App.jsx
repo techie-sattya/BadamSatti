@@ -5,8 +5,8 @@ import './App.css';
 import CardIntro from './components/cardintro';
 import WelcomePage from "./components/welcome";
 import { FaEdit } from 'react-icons/fa'; // icon package
-// const socket = io("https://badamsatti-rnmm.onrender.com/");
-const socket = io("http://localhost:3000/");
+const socket = io("https://badamsatti-rnmm.onrender.com/");
+// const socket = io("http://localhost:3000/");
 
 function App() {
   const [roomId, setRoomId] = useState("");
