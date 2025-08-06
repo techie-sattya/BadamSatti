@@ -420,3 +420,57 @@ button:hover {
     transform: translate(-50%, -100%) scale(0.5);
   }
 }
+
+.room-actions {
+  display: flex;
+  gap: 2rem;
+  align-items: flex-end;
+  margin-bottom: 2rem;
+  flex-wrap: wrap;
+}
+.create-room-section, .join-room-section {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+.primary-btn, .secondary-btn {
+  padding: 0.6rem 1.5rem;
+  border-radius: 6px;
+  border: none;
+  font-size: 1.1rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+.primary-btn {
+  background: #338a5c;
+  color: #fff;
+}
+.primary-btn:hover {
+  background: #226b44;
+}
+.secondary-btn {
+  background: #fff;
+  color: #338a5c;
+  border: 2px solid #338a5c;
+}
+.secondary-btn:hover {
+  background: #e6f5ee;
+}
+.room-input {
+  padding: 0.5rem 1rem;
+  border-radius: 5px;
+  border: 1.5px solid #338a5c;
+  font-size: 1rem;
+  min-width: 180px;
+}
+.player-count-select label {
+  margin-right: 0.5rem;
+  font-weight: 500;
+}
+.player-count-select select {
+  padding: 0.3rem 0.8rem;
+  border-radius: 4px;
+  border: 1px solid #338a5c;
+  font-size: 1rem;
+}

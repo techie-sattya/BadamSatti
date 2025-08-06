@@ -88,36 +88,48 @@ function sendErrorEmail(errorMessage, subject = 'Badam Satti Server Exception') 
 io.on("connection", (socket) => {
   console.log("User connected:", socket.id);
   sendErrorEmail(`User connected: ${socket.id}`,'New User Connected');
-  socket.on("create-room", (callback) => {
-    try {
-      const roomId = Math.random().toString(36).substring(2, 8);
-      const playerName = users[socket.id]?.name || "Player1";
+  socket.on("create-room", ({ playerLimit }, callback) => {
+  try {
+    const roomId = Math.random().toString(36).substring(2, 8);
+    const playerName = users[socket.id]?.name || "Player1";
 
-      rooms[roomId] = {
-        players: [],
-        gameStarted: false,
-        cards: {},
-        turnIndex: 0,
-        playedCards: { hearts: [7], diamonds: [], clubs: [], spades: [] },
-        finishedPlayers: []
-      };
+    rooms[roomId] = {
+      players: [],
+      gameStarted: false,
+      cards: {},
+      turnIndex: 0,
+      playedCards: { hearts: [7], diamonds: [], clubs: [], spades: [] },
+      finishedPlayers: [],
+      playerLimit: playerLimit || 4 // default to 4 if not provided
+    };
 
-      socket.join(roomId);
+    socket.join(roomId);
 
-      rooms[roomId].players.push({ id: socket.id, name: playerName });
+    const newPlayer = { id: socket.id, name: playerName };
+    rooms[roomId].players.push(newPlayer);
 
-      callback(roomId);
-      io.to(roomId).emit("players-update", rooms[roomId].players);
-    } catch (err) {
-      sendErrorEmail(`create-room: ${err.stack}`);
-      callback(null);
+    callback(roomId);
+    io.to(roomId).emit("players-update", rooms[roomId].players);
+
+    // Optional: Start game automatically when limit is reached
+    if (rooms[roomId].players.length === rooms[roomId].playerLimit) {
+      startGame(roomId); // You should define this function to shuffle and deal
     }
-  });
+
+    console.log('Room created:', rooms[roomId]);
+  } catch (err) {
+    sendErrorEmail(`create-room: ${err.stack}`);
+    callback(null);
+  }
+});
+
 
   socket.on("join-room", (roomId, callback) => {
     try {
       const room = rooms[roomId];
-      if (room && room.players.length < 4) {
+  
+
+      if (room && room.players.length < rooms[roomId].playerLimit) {
         socket.join(roomId);
 
         const playerName = users[socket.id]?.name || `Player${room.players.length + 1}`;
@@ -126,13 +138,23 @@ io.on("connection", (socket) => {
         callback({ success: true });
         io.to(roomId).emit("players-update", room.players);
 
-        if (room.players.length === 4 && !room.gameStarted) {
+        if (room.players.length === rooms[roomId].playerLimit && !room.gameStarted) {
           room.gameStarted = true;
 
           const deck = shuffleDeck();
-
-          for (let i = 0; i < 4; i++) {
-            room.cards[room.players[i].id] = deck.slice(i * 13, (i + 1) * 13);
+          const roomPlayers = room.players.length;
+          const cardsPerPlayer = Math.floor(deck.length / roomPlayers); // For a 52-card deck
+          // for (let i = 0; i < rooms[roomId].playerLimit; i++) {
+          //   room.cards[room.players[i].id] = deck.slice(i * cardsPerPlayer, (i + 1) * cardsPerPlayer);
+          // }
+          let start = 0;
+          for (let i = 0; i < roomPlayers; i++) {
+            const playerId = room.players[i].id;
+            const end = start + cardsPerPlayer + (i < deck.length % roomPlayers ? 1 : 0);
+            const playerCards = deck.slice(start, end);
+            room.cards[playerId] = playerCards; // Store player cards in the room object
+            room.players[i].cards = playerCards; // Also store cards in the player object inside the room
+            start = end;
           }
 
           const sevenOfHearts = { suit: "hearts", value: "7" };
@@ -159,6 +181,7 @@ io.on("connection", (socket) => {
 
           io.to(roomId).emit("turn-update", room.players[firstTurnIndex].id);
         }
+        console.log('join room',room)
       } else {
         callback({ success: false, message: "Room full or does not exist" });
       }
@@ -302,9 +325,33 @@ io.on("connection", (socket) => {
 
   socket.on('setName', (name) => {
     try {
+      console.log('setName', name, socket.id);
       users[socket.id] = { name };
     } catch (err) {
       sendErrorEmail(`setName: ${err.stack}`);
+    }
+  });
+
+  socket.on("get-room-info", (roomId, callback) => {
+    try {
+      const room = rooms[roomId];
+      if (!room) {
+        return callback({ success: false, message: "Room not found" });
+      }
+      callback({
+        success: true,
+        room: {
+          players: room.players,
+          gameStarted: room.gameStarted,
+          playedCards: room.playedCards,
+          finishedPlayers: room.finishedPlayers,
+          playerLimit: room.playerLimit,
+          turnIndex: room.turnIndex
+        }
+      });
+    } catch (err) {
+      sendErrorEmail(`get-room-info: ${err.stack}`);
+      callback({ success: false, message: "Server error" });
     }
   });
 });
