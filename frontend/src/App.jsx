@@ -5,8 +5,8 @@ import './App.css';
 import CardIntro from './components/cardintro';
 import WelcomePage from "./components/welcome";
 import { FaEdit } from 'react-icons/fa'; // icon package
-const socket = io("https://badamsatti-rnmm.onrender.com/");
-// const socket = io("http://localhost:3000/");
+// const socket = io("https://badamsatti-rnmm.onrender.com/");
+const socket = io("http://localhost:3000/");
 
 function App() {
   const [roomId, setRoomId] = useState("");
@@ -57,7 +57,12 @@ function App() {
       });
     }
   }, [roomId]);
-
+useEffect(() => {
+  if (lastPlayedCard) {
+    const timer = setTimeout(() => setLastPlayedCard(null), 1500); // 1.5 seconds
+    return () => clearTimeout(timer);
+  }
+}, [lastPlayedCard]);
 
   useEffect(() => {
     socket.on("players-update", (updatedPlayers) => setPlayers(updatedPlayers));
@@ -73,7 +78,9 @@ function App() {
       setMyTurn(currentPlayerId === socket.id);
     });
     socket.on("card-played", ({ card, playerId, playedCards }) => {
+      console.log("played Cards", playedCards);
       console.log(`${playerId} played ${card.value} of ${card.suit}`);
+      setLastPlayedCard({ value: card.value, suit: card.suit });
       setPlayedCards(playedCards);
     });
 
@@ -142,15 +149,25 @@ function App() {
   const validMoves = getValidMoves(myCards, playedCards);
   const canPass = validMoves.length === 0;
 
+  const getNumericValue = (value) => {
+    if (typeof value === 'number') return value;
+    if (value === 'A') return 1;
+    if (value === 'J') return 11;
+    if (value === 'Q') return 12;
+    if (value === 'K') return 13;
+    return parseInt(value, 10);
+  };
+
   const isCardPlayable = (card, playedCards) => {
     const values = playedCards[card.suit] || [];
-    const numValue = parseInt(card.value);
+    const numValue = getNumericValue(card.value);
 
     if (!values.includes(7)) return numValue === 7;
     return values.includes(numValue - 1) || values.includes(numValue + 1);
   };
 
   const hasValidMove = myCards.some(card => isCardPlayable(card, playedCards));
+  //console.log("Valid Moves:", myCards, validMoves, hasValidMove, playedCards);
 
   const splitCards = (values) => {
     const above = values.filter(v => v < 7).sort((a, b) => b - a);
@@ -298,32 +315,47 @@ function App() {
               ) : (
                 <>
 
+
                   <h2 className="room-title">Room ID: {roomId}</h2>
                   <h3 className="player-count">Players Joined: {players.length}/{roomInfo?.room.playerLimit}</h3>
                   <div className="player-list">
-                    {players.map((p, index) => (
+                  {players.map((p, index) => {
+                    const playerRank = rankings.find(r => r.id === p.id)?.rank;
+                    return (
                       <div
                         key={p.id}
                         className={`player-card 
-                ${p.id === socket.id ? 'you' : ''} 
-                ${p.id === turnPlayerId ? 'active-turn' : ''}`}
+                          ${p.id === socket.id ? 'you' : ''} 
+                          ${p.id === turnPlayerId ? 'active-turn' : ''}`}
                       >
                         <span className="player-name">
                           {p.id === socket.id ? "You" : p.name || `Player ${index + 1}`}
-                          {/* {roomInfo?.room.finishedPlayers > 0 && roomInfo?.room.finishedPlayers.some(r => r.id === socket.id) && (
-                  <h3>You finished at {rankings.find(r => r.id === socket.id).rank} place</h3>
-                )} */}
+                          {playerRank && (
+                            <span
+                              className={`winner-rank${playerRank === 1 ? ' sparkle' : ''}`}
+                              style={{ marginLeft: 8, color: "#ff9800", fontWeight: "bold", position: "relative" }}
+                            >
+                              🏆 {playerRank}
+                              {playerRank === 1 && (
+                                <span className="firework">
+                                  <span className="firework-dot dot1"></span>
+                                  <span className="firework-dot dot2"></span>
+                                  <span className="firework-dot dot3"></span>
+                                  <span className="firework-dot dot4"></span>
+                                  <span className="firework-dot dot5"></span>
+                                  <span className="firework-dot dot6"></span>
+                                  <span className="firework-dot dot7"></span>
+                                  <span className="firework-dot dot8"></span>
+                                </span>
+                              )}
+                            </span>
+                          )}
                         </span>
                       </div>
-                    ))}
-                  </div>
-                  {/* {(
-  <div className={`floating-card ${['hearts', 'diamonds'].includes(lastPlayedCard.suit) ? 'red' : 'black'}`}>
-    <span>
-      {getCardDisplayValue(lastPlayedCard.value)} {suitIcons[lastPlayedCard.suit]}
-    </span>
-  </div>
-)} */}
+                    );
+                  })}
+                </div>
+                                
                   <div style={{ display: "flex", gap: "8px", flexWrap: "wrap" }}>
                     {myCards.map((card, index) => {
                       const validMoves = getValidMoves(myCards, playedCards);
@@ -337,7 +369,7 @@ function App() {
                               // if (!res.success) alert(res.message);
                               if (res.success) {
                                 setMyCards(prev => prev.filter(c => !(c.suit === card.suit && c.value === card.value)));
-                                setLastPlayedCard({ value: card.value, suit: card.suit });
+                                
                               } else {
                                 alert(res.message || "Invalid move.");
                               }
@@ -375,7 +407,13 @@ function App() {
                       Waiting to turn
                     </div>
                   )}
-
+ {(lastPlayedCard &&
+                    <div className={`floating-card ${['hearts', 'diamonds'].includes(lastPlayedCard?.suit) ? 'red' : 'black'}`}>
+                      <span>
+                        {getCardDisplayValue(lastPlayedCard?.value)} {suitIcons[lastPlayedCard?.suit]}
+                      </span>
+                    </div>
+                  )}
                   <div className="played-board">
                     {Object.entries(playedCards).map(([suit, values]) =>
                       values.includes(7) ? (
